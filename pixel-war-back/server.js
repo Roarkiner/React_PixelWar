@@ -1,20 +1,18 @@
 const express = require("express");
-const cors = require("cors");
-const db = require("./config/database");
+const dotenv = require("dotenv");
+const authRoutes = require("./routes/authRoutes");
+const { verifyJWT } = require("./middlewares/authMiddleware");
+
+dotenv.config();
 
 const app = express();
-app.use(cors());
 app.use(express.json());
 
-app.get("/", async (req, res) => {
-	try {
-		const [rows] = await db.query("SELECT 'Coucou ça marche de fou' as message");
-		res.json(rows[0]);
-	} catch (error) {
-		res.status(500).json({ error: error.message });
-	}
+app.use("/auth", authRoutes);
+
+app.get("/protected", verifyJWT, (req, res) => {
+	const userId = req.userId;
+	res.json({ message: "This is a protected route", userId });
 });
 
-app.listen(3000, () => {
-	console.log("Server running on port 3000");
-});
+app.listen(3000, () => console.log("Serveur en écoute sur le port 3000"));

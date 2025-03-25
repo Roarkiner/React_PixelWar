@@ -10,6 +10,7 @@ services:
       mysql_USER: ${MYSQL_USER}
       mysql_PASSWORD: ${MYSQL_PASSWORD}
       mysql_NAME: ${MYSQL_DATABASE}
+    command: [ "sh", "-c", "apt-get update && apt-get install -y netcat-traditional && until nc -z mysql 3306; do sleep 1; done && node server.js" ]
 
   mysql:
     image: mysql:9.2
@@ -20,8 +21,9 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
+      - ./db-init:/docker-entrypoint-initdb.d
       - mysql_data:/var/lib/mysql
 
 volumes:
