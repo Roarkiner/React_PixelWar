@@ -13,7 +13,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
 	const [offset, setOffset] = useState({ x: 0, y: 0 });
 	const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number } | null>(null);
 	const [isDragging, setIsDragging] = useState(false);
-	const [lastMousePos, setLastMousePos] = useState<{ x: number; y: number } | null>(null);
+	// const [lastMousePos, setLastMousePos] = useState<{ x: number; y: number } | null>(null);
 
 	const [pixelData, setPixelData] = useState<CanvaPixel[]>(() => {
 		console.log(canvaPixels);
@@ -90,14 +90,14 @@ const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
 		drawGrid();
 	}, [zoom, offset, hoveredPixel, pixelData]);
 
-	const handleMouseDown = (e: React.MouseEvent) => {
+	const handleMouseDown = () => {
 		setIsDragging(true);
-		setLastMousePos({ x: e.clientX, y: e.clientY });
+		// setLastMousePos({ x: e.clientX, y: e.clientY });
 	};
 
 	const handleMouseUp = () => {
 		setIsDragging(false);
-		setLastMousePos(null);
+		// setLastMousePos(null);
 	};
 
 	const handleMouseMove = (e: React.MouseEvent) => {
@@ -105,7 +105,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
 			const deltaX = e.movementX;
 			const deltaY = e.movementY;
 			setOffset(prev => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
-			setLastMousePos({ x: e.clientX, y: e.clientY });
+			// setLastMousePos({ x: e.clientX, y: e.clientY });
 		} else {
 			const canvas = canvasRef.current;
 			if (!canvas) return;
