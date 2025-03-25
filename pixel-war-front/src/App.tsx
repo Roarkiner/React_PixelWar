@@ -18,8 +18,8 @@ function App() {
 				<BrowserRouter>
 					<Routes>
 						<Route path='/' element={<Layout />}>
+							<Route index element={<GridPage />} />
 							<Route path='/auth/:type' element={<Authentication />} />
-							<Route path='/grid' element={<GridPage />} />
 						</Route>
 					</Routes>
 				</BrowserRouter>
