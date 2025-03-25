@@ -34,28 +34,28 @@ INSERT INTO Pixels (color, user_id, position_x, position_y, last_painted_at)
 SELECT '#FF5733', 1, 0, 0 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 0 AND position_y = 0);
 
 INSERT INTO Pixels (color, user_id, position_x, position_y, last_painted_at)
-SELECT '#33FF57', 1, 1000, 0 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 1000 AND position_y = 0);
+SELECT '#33FF57', 1, 99, 0 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 99 AND position_y = 0);
 
 INSERT INTO Pixels (color, user_id, position_x, position_y, last_painted_at)
-SELECT '#3357FF', 1, 0, 1000 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 0 AND position_y = 1000);
+SELECT '#3357FF', 1, 0, 99 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 0 AND position_y = 99);
 
 INSERT INTO Pixels (color, user_id, position_x, position_y, last_painted_at)
-SELECT '#FF33A6', 1, 1000, 1000 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 1000 AND position_y = 1000);
+SELECT '#FF33A6', 1, 99, 99 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 99 AND position_y = 99);
 
 INSERT INTO Pixels (color, user_id, position_x, position_y, last_painted_at)
-SELECT '#FFD700', 2, 500, 500 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 500 AND position_y = 500);
+SELECT '#FFD700', 2, 50, 50 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 50 AND position_y = 50);
 
 INSERT INTO Pixels (color, user_id, position_x, position_y, last_painted_at)
-SELECT '#800080', 2, 501, 500 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 501 AND position_y = 500);
+SELECT '#800080', 2, 51, 50 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 51 AND position_y = 50);
 
 INSERT INTO Pixels (color, user_id, position_x, position_y, last_painted_at)
-SELECT '#FFFFFF', 2, 499, 500 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 499 AND position_y = 500);
+SELECT '#FFFFFF', 2, 49, 50 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 49 AND position_y = 50);
 
 INSERT INTO Pixels (color, user_id, position_x, position_y, last_painted_at)
-SELECT '#000000', 2, 500, 501 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 500 AND position_y = 501);
+SELECT '#000000', 2, 50, 51 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 50 AND position_y = 51);
 
 INSERT INTO Pixels (color, user_id, position_x, position_y, last_painted_at)
-SELECT '#A52A2A', 2, 500, 499 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 500 AND position_y = 499);
+SELECT '#A52A2A', 2, 50, 49 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 50 AND position_y = 499);
 
 INSERT INTO Pixels (color, user_id, position_x, position_y, last_painted_at)
-SELECT '#C0C0C0', 2, 501, 501 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 501 AND position_y = 501);
+SELECT '#C0C0C0', 2, 51, 51 , NOW() WHERE NOT EXISTS (SELECT 1 FROM Pixels WHERE position_x = 51 AND position_y = 51);
