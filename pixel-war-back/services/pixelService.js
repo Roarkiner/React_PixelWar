@@ -22,7 +22,7 @@ const getGrid = async () => {
 
 const getPixel = async (positionX, positionY) => {
 	const [pixel] = await connection.promise().query(`
-	  SELECT Pixels.color, Users.username
+	  SELECT Pixels.color, Pixels.last_painted_at, Users.username
 	  FROM Pixels
 	  LEFT JOIN Users ON Users.id = Pixels.user_id
 	  WHERE Pixels.position_x = ? AND Pixels.position_y = ?
@@ -36,6 +36,7 @@ const getPixel = async (positionX, positionY) => {
 		positionX,
 		positionY,
 		color: pixel[0].color,
+		last_painted_at: pixel[0].last_painted_at,
 		owner: pixel[0].username
 	};
 };
