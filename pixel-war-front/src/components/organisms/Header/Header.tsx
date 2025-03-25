@@ -3,19 +3,20 @@ import { FC } from "react";
 import { useAuth } from "../../../contexts/AuthContext";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { Box } from "@mui/material";
+import { Button } from "../../atoms";
 
 const Header: FC = () => {
 	const { isConnected, logout, user } = useAuth();
 
 	const onLogout = () => {
 		logout();
-		window.location.href = '/grid';
+		window.location.href = '/';
 	}
 
     return (
         <nav className="main-navbar">
             <ul>
-                <li><Link to="/grid"><h3>LA GRILLE</h3></Link></li>
+                <li><Link to="/"><h3>LA GRILLE</h3></Link></li>
             </ul>
             {!isConnected() ?
                 <div className="header-auth-buttons">
@@ -26,10 +27,12 @@ const Header: FC = () => {
                     </Link>
                 </div>
                 :
-				<Box display='flex' alignItems='center' onClick={onLogout}>
-					<AccountCircleIcon style={{marginRight: '0.5rem'}}/>
-					<h3>Bienvenue, {user?.username}</h3>
-				</Box>
+				<Button variant="outlined">
+					<Box display='flex' alignItems='center' onClick={onLogout}>
+						<AccountCircleIcon style={{marginRight: '0.5rem'}}/>
+						<h3>Bienvenue, {user?.username}</h3>
+					</Box>
+				</Button>
             }
         </nav>
     );
