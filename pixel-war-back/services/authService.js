@@ -40,7 +40,13 @@ const signUp = async (email, username, password) => {
 
 	const token = generateJWT(result.insertId);
 	await connection.promise().query("UPDATE Users SET jwt_token = ? WHERE id = ?", [token, result.insertId]);
-	return token;
+	return {
+		token,
+		user: {
+			email,
+			username
+		}
+	};
 };
 
 const login = async (email, password) => {
@@ -61,7 +67,13 @@ const login = async (email, password) => {
 	const token = generateJWT(user[0].id);
 	await connection.promise().query("UPDATE Users SET jwt_token = ? WHERE id = ?", [token, user[0].id]);
 
-	return token;
+	return {
+		token,
+		user: {
+			email: user[0].email,
+			username: user[0].username
+		}
+	};
 };
 
 module.exports = { signUp, login };
