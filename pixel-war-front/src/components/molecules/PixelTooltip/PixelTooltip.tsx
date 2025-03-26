@@ -24,6 +24,18 @@ const PixelTooltip: React.FC<PixelTooltipProps> = ({ info, onClose }) => {
 		};
 	}, [onClose]);
 
+	let formattedDate = info.last_painted_at;
+	const parsedDate = new Date(info.last_painted_at);
+	if (!isNaN(parsedDate.getTime())) {
+		formattedDate = parsedDate.toLocaleString('fr-FR', {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
+
 	return (
 		<Box
 			ref={tooltipRef}
@@ -52,7 +64,7 @@ const PixelTooltip: React.FC<PixelTooltipProps> = ({ info, onClose }) => {
 			<Box>
 				<div>Position: ({info.positionX}, {info.positionY})</div>
 				<div>Couleur: {info.color}</div>
-				<div>Posé le: {info.last_painted_at}</div>
+				<div>Posé le: {formattedDate}</div>
 				<div>Propriétaire: {info.owner}</div>
 			</Box>
 		</Box>
