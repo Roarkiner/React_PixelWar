@@ -33,7 +33,7 @@ const LockButton: React.FC<LockButtonProps> = ({ isLocked, setIsLocked }) => {
 		}}
 	>
 		{icon}
-		{isLocked ? 'Pose de pixel verrouillé' : ''}
+		{isLocked ? 'Pose de pixel verrouillée' : ''}
 	</Button>);
 }
 
