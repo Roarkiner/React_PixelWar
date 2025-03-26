@@ -28,3 +28,16 @@ Ouvre un terminal à cet emplacement
 Puis ```npm run preview```
 
 Cliquez sur l'url local donné par le terminal
+
+## Tester les web sockets
+
+Ouvrez une fenêtre sur une navigateur
+Ouvrez une fenêtre sur un autre navigateur ou en navigation privée
+Placez des pixels et vérifiez la synchronisation
+
+## Utilisateurs présents de base
+
+De base, deux utilisateurs sont présents à la création de la BDD : 
+- login : "user1@example.com" ou "user2@example.com"
+- mdp : "password"
+Vous pouvez vous connecter à leur compte ou créer un nouveau compte pour commencer à placer des pixels
