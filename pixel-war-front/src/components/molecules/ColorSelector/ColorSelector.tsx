@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, IconButton, Popover } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, IconButton, Popover, TextField } from '@mui/material';
 import { HexColorPicker } from 'react-colorful';
 
 interface ColorSelectorProps {
@@ -10,6 +10,11 @@ interface ColorSelectorProps {
 
 const ColorSelector: React.FC<ColorSelectorProps> = ({ currentColor, recentColors, onColorChange }) => {
 	const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+	const [inputValue, setInputValue] = useState(currentColor);
+
+	useEffect(() => {
+		setInputValue(currentColor);
+	}, [currentColor]);
 
 	const handleOpenPicker = (event: React.MouseEvent<HTMLButtonElement>) => {
 		setAnchorEl(event.currentTarget);
@@ -22,12 +27,25 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ currentColor, recentColor
 	const open = Boolean(anchorEl);
 	const id = open ? 'color-picker-popover' : undefined;
 
-	const handleColorChange = (newColor: string) => {
+	const handleColorPickerChange = (newColor: string) => {
 		onColorChange(newColor);
 	};
 
 	const handleRecentColorClick = (color: string) => {
 		onColorChange(color);
+	};
+
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setInputValue(e.target.value);
+	};
+
+	const handleInputBlur = () => {
+		const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+		if (hexRegex.test(inputValue)) {
+			onColorChange(inputValue);
+		} else {
+			setInputValue(currentColor);
+		}
 	};
 
 	return (
@@ -63,10 +81,18 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ currentColor, recentColor
 					onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
 					onMouseUp={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
 				>
-					<HexColorPicker color={currentColor} onChange={handleColorChange} />
+					<HexColorPicker color={currentColor} onChange={handleColorPickerChange} />
 				</Box>
 			</Popover>
-			{recentColors.length > 0 &&
+			<TextField
+				value={inputValue}
+				onChange={handleInputChange}
+				onBlur={handleInputBlur}
+				variant="outlined"
+				size="small"
+				sx={{ marginLeft: 2, width: '120px' }}
+			/>
+			{recentColors.length > 0 && (
 				<Box
 					display="flex"
 					alignItems="center"
@@ -74,9 +100,7 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ currentColor, recentColor
 					padding="2px"
 					border={1}
 					borderRadius={10}
-					sx={{
-						backgroundColor: 'lightgrey'
-					}}
+					sx={{ backgroundColor: 'lightgrey' }}
 				>
 					{recentColors.map((color, index) => (
 						<Box
@@ -94,7 +118,7 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ currentColor, recentColor
 						/>
 					))}
 				</Box>
-			}
+			)}
 		</Box>
 	);
 };
