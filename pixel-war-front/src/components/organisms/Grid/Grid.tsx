@@ -3,6 +3,7 @@ import { CanvaPixel, PixelInfo } from '../../../typings/Pixel';
 import { GridBar, PixelTooltip } from '../../molecules';
 import axiosService from '../../../services/AxiosService';
 import { useAuth } from '../../../contexts/AuthContext';
+import { io, Socket } from 'socket.io-client';
 
 interface GridProps {
 	canvaPixels: CanvaPixel[];
@@ -26,10 +27,52 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 	const [isLocked, setIsLocked] = useState(true);
 	const [currentColor, setCurrentColor] = useState(userColors[0] || "#FFFFFF");
 	const { isConnected } = useAuth();
+	const [pixelData, setPixelData] = useState<CanvaPixel[]>(() => canvaPixels.map(pixel => ({ ...pixel })));
+	const socket = useRef<Socket | null>(null);
 
-	const [pixelData, setPixelData] = useState<CanvaPixel[]>(() => {
-		return canvaPixels.map(pixel => ({ ...pixel }));
-	});
+	useEffect(() => {
+		socket.current = io("http://localhost:3000");
+		socket.current.on("newPixel", (newPixel: any) => {
+			console.log(newPixel)
+			setPixelData(prevData => {
+				const index = prevData.findIndex(pixel => pixel.positionX === newPixel.positionX && pixel.positionY === newPixel.positionY);
+				if (index !== -1) {
+					const newData = [...prevData];
+					newData[index] = newPixel;
+					return newData;
+				} else {
+					return [...prevData, newPixel];
+				}
+			});
+		});
+		return () => {
+			socket.current?.disconnect();
+		};
+	}, []);
+
+	useEffect(() => {
+		if (userColors.length > 0) {
+			setCurrentColor(userColors[0]);
+		}
+	}, [userColors]);
+
+	useEffect(() => {
+		recenterGrid();
+	}, []);
+
+	useEffect(() => {
+		setPixelData(canvaPixels.map(pixel => ({ ...pixel })));
+	}, [canvaPixels]);
+
+	useEffect(() => {
+		updateCanvasSize();
+		window.addEventListener('resize', updateCanvasSize);
+		return () => window.removeEventListener('resize', updateCanvasSize);
+	}, []);
+
+	useEffect(() => {
+		drawGrid();
+	}, [zoom, offset, hoveredPixel, pixelData]);
 
 	const recenterGrid = () => {
 		const canvas = canvasRef.current;
@@ -56,69 +99,26 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 		if (!canvas) return;
 		const ctx = canvas.getContext('2d');
 		if (!ctx) return;
-
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
 		const pixelSize = 50 * zoom;
-
 		for (let y = 0; y < gridSize.y; y++) {
 			for (let x = 0; x < gridSize.x; x++) {
 				let color = "#FFF";
 				const pixel = pixelData.find(pixel => pixel.positionX === x && pixel.positionY === y);
-				if (pixel)
-					color = pixel.color;
+				if (pixel) color = pixel.color;
 				ctx.fillStyle = color;
-				ctx.fillRect(
-					x * pixelSize + offset.x,
-					y * pixelSize + offset.y,
-					pixelSize,
-					pixelSize
-				);
-
+				ctx.fillRect(x * pixelSize + offset.x, y * pixelSize + offset.y, pixelSize, pixelSize);
 				if (hoveredPixel && hoveredPixel.x === x && hoveredPixel.y === y) {
 					ctx.strokeStyle = 'black';
 					ctx.lineWidth = 2;
-					ctx.strokeRect(
-						x * pixelSize + offset.x,
-						y * pixelSize + offset.y,
-						pixelSize,
-						pixelSize
-					);
+					ctx.strokeRect(x * pixelSize + offset.x, y * pixelSize + offset.y, pixelSize, pixelSize);
 				}
 			}
 		}
 		ctx.strokeStyle = 'black';
 		ctx.lineWidth = 1;
-		ctx.strokeRect(
-			offset.x,
-			offset.y,
-			gridSize.x * pixelSize,
-			gridSize.y * pixelSize
-		);
+		ctx.strokeRect(offset.x, offset.y, gridSize.x * pixelSize, gridSize.y * pixelSize);
 	};
-
-	useEffect(() => {
-		if (userColors.length > 0) {
-			setCurrentColor(userColors[0]);
-		}
-	}, [userColors]);
-
-	useEffect(() => {
-		recenterGrid();
-	}, []);
-
-	useEffect(() => {
-		setPixelData(canvaPixels.map(pixel => ({ ...pixel })));
-	}, [canvaPixels]);
-
-	useEffect(() => {
-		updateCanvasSize();
-		window.addEventListener('resize', updateCanvasSize);
-		return () => window.removeEventListener('resize', updateCanvasSize);
-	}, []);
-
-	useEffect(() => {
-		drawGrid();
-	}, [zoom, offset, hoveredPixel, pixelData]);
 
 	const handleMouseDown = () => {
 		if (!isLocked) return;
@@ -133,9 +133,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 
 	const handleMouseMove = (e: React.MouseEvent) => {
 		if (isDragging) {
-			if (Math.abs(e.movementX) > 5 || Math.abs(e.movementY) > 5) {
-				setDragged(true);
-			}
+			if (Math.abs(e.movementX) > 5 || Math.abs(e.movementY) > 5) setDragged(true);
 			const deltaX = e.movementX;
 			const deltaY = e.movementY;
 			setOffset(prev => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
@@ -159,9 +157,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 	const handleClick = async (e: React.MouseEvent) => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
-		if (dragged) {
-			return;
-		}
+		if (dragged) return;
 		const rect = canvas.getBoundingClientRect();
 		const mouseX = e.clientX - rect.left;
 		const mouseY = e.clientY - rect.top;
@@ -169,7 +165,6 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 		const x = Math.floor((mouseX - offset.x) / pixelSize);
 		const y = Math.floor((mouseY - offset.y) / pixelSize);
 		if (x < 0 || x >= gridSize.x || y < 0 || y >= gridSize.y) return;
-
 		if (isLocked || !isConnected()) {
 			try {
 				const response = await axiosService.get(`/api/pixel?positionX=${x}&positionY=${y}`);
@@ -190,14 +185,9 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 			}
 			return;
 		}
-		const previousPixel = pixelData.find(
-			(pixel) => pixel.positionX === x && pixel.positionY === y
-		);
-
-		setPixelData((prevData) => {
-			const index = prevData.findIndex(
-				(pixel) => pixel.positionX === x && pixel.positionY === y
-			);
+		const previousPixel = pixelData.find(pixel => pixel.positionX === x && pixel.positionY === y);
+		setPixelData(prevData => {
+			const index = prevData.findIndex(pixel => pixel.positionX === x && pixel.positionY === y);
 			if (index !== -1) {
 				const newData = [...prevData];
 				newData[index] = { ...newData[index], color: currentColor };
@@ -206,40 +196,26 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 				return [...prevData, { positionX: x, positionY: y, color: currentColor }];
 			}
 		});
-
 		setUserColors(prevColors => {
 			const index = prevColors.findIndex(c => c.toLowerCase() === currentColor.toLowerCase());
 			let newColors = [...prevColors];
-			if (index !== -1) {
-				newColors.splice(index, 1);
-			}
+			if (index !== -1) newColors.splice(index, 1);
 			newColors.unshift(currentColor);
-			if (newColors.length > 10) {
-				newColors = newColors.slice(0, 10);
-			}
+			if (newColors.length > 10) newColors = newColors.slice(0, 10);
 			return newColors;
 		});
-
 		try {
-			await axiosService.post('/api/pixel', {
-				positionX: x,
-				positionY: y,
-				color: currentColor
-			});
+			await axiosService.post('/api/pixel', { positionX: x, positionY: y, color: currentColor });
 		} catch (error) {
 			setPixelData(prevData => {
-				const index = prevData.findIndex(
-					(pixel) => pixel.positionX === x && pixel.positionY === y
-				);
+				const index = prevData.findIndex(pixel => pixel.positionX === x && pixel.positionY === y);
 				if (index !== -1) {
 					if (previousPixel) {
 						const newData = [...prevData];
 						newData[index] = previousPixel;
 						return newData;
 					} else {
-						return prevData.filter(
-							(pixel) => !(pixel.positionX === x && pixel.positionY === y)
-						);
+						return prevData.filter(pixel => !(pixel.positionX === x && pixel.positionY === y));
 					}
 				}
 				return prevData;
@@ -288,7 +264,8 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 				currentColor={currentColor}
 				recentColors={userColors}
 				onColorChange={setCurrentColor}
-				shouldDisplayPixelControls={isConnected()} />
+				shouldDisplayPixelControls={isConnected()}
+			/>
 			{tooltipInfos && <PixelTooltip info={tooltipInfos} onClose={() => setTooltipInfos(null)} />}
 		</div>
 	);

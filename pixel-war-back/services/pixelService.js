@@ -1,5 +1,11 @@
 const mysql = require("mysql2");
 
+let io;
+
+const setIoInstance = (ioInstance) => {
+	io = ioInstance
+}
+
 const connection = mysql.createConnection({
 	host: process.env.MYSQL_HOST,
 	user: process.env.MYSQL_USER,
@@ -9,9 +15,9 @@ const connection = mysql.createConnection({
 
 const getGrid = async () => {
 	const [pixels] = await connection.promise().query(`
-	  SELECT Pixels.position_x, Pixels.position_y, Pixels.color
-	  FROM Pixels
-	  WHERE Pixels.color IS NOT NULL
+		SELECT Pixels.position_x, Pixels.position_y, Pixels.color
+		FROM Pixels
+		WHERE Pixels.color IS NOT NULL
 	`);
 	return pixels.map(pixel => ({
 		positionX: pixel.position_x,
@@ -22,10 +28,10 @@ const getGrid = async () => {
 
 const getPixel = async (positionX, positionY) => {
 	const [pixel] = await connection.promise().query(`
-	  SELECT Pixels.color, Pixels.last_painted_at, Users.username
-	  FROM Pixels
-	  LEFT JOIN Users ON Users.id = Pixels.user_id
-	  WHERE Pixels.position_x = ? AND Pixels.position_y = ?
+		SELECT Pixels.color, Pixels.last_painted_at, Users.username
+		FROM Pixels
+		LEFT JOIN Users ON Users.id = Pixels.user_id
+		WHERE Pixels.position_x = ? AND Pixels.position_y = ?
 	`, [positionX, positionY]);
 
 	if (!pixel[0] || !pixel[0].color) {
@@ -48,9 +54,9 @@ const colorPixel = async (userId, positionX, positionY, color) => {
 	}
 
 	const [userRows] = await connection.promise().query(`
-	  SELECT id, colors
-	  FROM Users
-	  WHERE id = ?
+		SELECT id, colors
+		FROM Users
+		WHERE id = ?
 	`, [userId]);
 
 	if (!userRows[0]) {
@@ -60,8 +66,8 @@ const colorPixel = async (userId, positionX, positionY, color) => {
 	const user = userRows[0];
 
 	const [existingPixel] = await connection.promise().query(`
-	  SELECT * FROM Pixels
-	  WHERE position_x = ? AND position_y = ?
+		SELECT * FROM Pixels
+		WHERE position_x = ? AND position_y = ?
 	`, [positionX, positionY]);
 
 	const now = new Date();
@@ -93,10 +99,16 @@ const colorPixel = async (userId, positionX, positionY, color) => {
 	}
 
 	await connection.promise().query(`
-  UPDATE Users
-  SET colors = ?
-  WHERE id = ?
-`, [JSON.stringify(colorsArray), userId]);
+		UPDATE Users
+		SET colors = ?
+		WHERE id = ?
+	`, [JSON.stringify(colorsArray), userId]);
+
+	io.emit("newPixel", {
+		positionX,
+		positionY,
+		color,
+	});
 
 	return { message: "Pixel colorié avec succès !" };
 };
@@ -104,5 +116,6 @@ const colorPixel = async (userId, positionX, positionY, color) => {
 module.exports = {
 	getGrid,
 	getPixel,
-	colorPixel
+	colorPixel,
+	setIoInstance
 };
