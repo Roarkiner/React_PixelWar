@@ -42,50 +42,61 @@ const getPixel = async (positionX, positionY) => {
 };
 
 const colorPixel = async (userId, positionX, positionY, color) => {
-	const COLOR_DELAY = 5;
+	const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+	if (!hexRegex.test(color)) {
+		throw new Error("La couleur doit être sous la forme '#xxxxxx'");
+	}
 
-	const [user] = await connection.promise().query(`
-	  SELECT can_use_pixel_at
+	const [userRows] = await connection.promise().query(`
+	  SELECT id, colors
 	  FROM Users
 	  WHERE id = ?
 	`, [userId]);
 
-	if (!user[0]) {
+	if (!userRows[0]) {
 		throw new Error("Utilisateur introuvable.");
 	}
 
-	const canUsePixelAt = user[0].can_use_pixel_at;
-	const now = new Date();
-
-	if (new Date(canUsePixelAt) > now) {
-		const remainingTime = Math.ceil((new Date(canUsePixelAt) - now) / 1000);
-		throw new Error(`Vous ne pouvez pas colorier ce pixel pour l'instant. Il vous reste ${remainingTime} secondes.`);
-	}
+	const user = userRows[0];
 
 	const [existingPixel] = await connection.promise().query(`
-		SELECT * FROM Pixels
-		WHERE position_x = ? AND position_y = ?
-	  `, [positionX, positionY]);
+	  SELECT * FROM Pixels
+	  WHERE position_x = ? AND position_y = ?
+	`, [positionX, positionY]);
+
+	const now = new Date();
 
 	if (existingPixel.length === 0) {
 		await connection.promise().query(`
-		  INSERT INTO Pixels (position_x, position_y, color, user_id)
-		  VALUES (?, ?, ?, ?)
-		`, [positionX, positionY, color, userId]);
+		INSERT INTO Pixels (position_x, position_y, color, user_id, last_painted_at)
+		VALUES (?, ?, ?, ?, ?)
+	  `, [positionX, positionY, color, userId, now]);
 	} else {
 		await connection.promise().query(`
-		  UPDATE Pixels
-		  SET color = ?, user_id = ?
-		  WHERE position_x = ? AND position_y = ?
-		`, [color, userId, positionX, positionY]);
+		UPDATE Pixels
+		SET color = ?, user_id = ?, last_painted_at = ?
+		WHERE position_x = ? AND position_y = ?
+	  `, [color, userId, now, positionX, positionY]);
 	}
 
-	const newCanUsePixelAt = new Date(now.getTime() + COLOR_DELAY * 60000);
+	let colorsArray = [];
+	if (user.colors)
+		colorsArray = user.colors;
+
+	const index = colorsArray.findIndex(c => c.toLowerCase() === color.toLowerCase());
+	if (index !== -1) {
+		colorsArray.splice(index, 1);
+	}
+	colorsArray.unshift(color);
+	if (colorsArray.length > 10) {
+		colorsArray = colorsArray.slice(0, 10);
+	}
+
 	await connection.promise().query(`
-		UPDATE Users
-		SET can_use_pixel_at = ?
-		WHERE id = ?
-	  `, [newCanUsePixelAt, userId]);
+  UPDATE Users
+  SET colors = ?
+  WHERE id = ?
+`, [JSON.stringify(colorsArray), userId]);
 
 	return { message: "Pixel colorié avec succès !" };
 };

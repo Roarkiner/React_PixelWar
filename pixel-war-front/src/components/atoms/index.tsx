@@ -5,6 +5,9 @@ import FormControlLabel from "./FormControlLabel/FormControlLabel";
 import CardWithPictureWithoutAction from './Cards/CardWithPictureWithoutAction'
 import Link from "./Link/Link";
 import LinkButton from "./LinkButton/LinkButton";
+import CoordinatesDisplay from "./CoordinatesDisplay/CoordinatesDisplay";
+import LockButton from "./LockButton/LockButton";
+import RecenterButton from "./RecenterButton/RecenterButton";
 
 export {
 	Typography,
@@ -13,5 +16,8 @@ export {
 	FormControlLabel,
 	CardWithPictureWithoutAction,
 	Link,
-	LinkButton
+	LinkButton,
+	CoordinatesDisplay,
+	LockButton,
+	RecenterButton
 };

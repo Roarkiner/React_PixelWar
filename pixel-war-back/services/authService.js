@@ -34,8 +34,8 @@ const signUp = async (email, username, password) => {
 	const colors = JSON.stringify([]);
 
 	const [result] = await connection.promise().query(
-		"INSERT INTO Users (email, username, password, can_use_pixel_at, colors) VALUES (?, ?, ?, ?, ?)",
-		[email, username, hashedPassword, now, colors]
+		"INSERT INTO Users (email, username, password, colors) VALUES (?, ?, ?, ?)",
+		[email, username, hashedPassword, colors]
 	);
 
 	const token = generateJWT(result.insertId);

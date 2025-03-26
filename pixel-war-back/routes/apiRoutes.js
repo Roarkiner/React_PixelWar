@@ -1,5 +1,6 @@
 const express = require("express");
 const { getGrid, getPixel, colorPixel } = require("../services/pixelService");
+const { getUserColors } = require("../services/userService");
 const { verifyJWT } = require("../middlewares/authMiddleware");
 
 const router = express.Router();
@@ -45,6 +46,18 @@ router.post("/pixel", verifyJWT, async (req, res) => {
 	} catch (err) {
 		console.error("Error coloring pixel:", err);
 		res.status(400).json({ message: err.message });
+	}
+});
+
+router.get("/colors", verifyJWT, async (req, res) => {
+	const userId = req.userId;
+
+	try {
+		const colors = await getUserColors(userId);
+		res.json(colors);
+	} catch (err) {
+		console.error("Error fetching user colors:", err);
+		res.status(500).json({ message: "Server error." });
 	}
 });
 

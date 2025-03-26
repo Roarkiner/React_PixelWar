@@ -1,32 +1,46 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { GridBar, RecenterButton } from '../../molecules';
 import { CanvaPixel } from '../../../typings/Pixel';
+import { GridBar } from '../../molecules';
+import axiosService from '../../../services/AxiosService';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface GridProps {
 	canvaPixels: CanvaPixel[];
+	userColors: string[];
+	setUserColors: (value: React.SetStateAction<string[]>) => void;
 }
 
-const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
+const MAX_ZOOM = 5;
+const MIN_ZOOM = 0.1;
+const ZOOM_SENSITIVITY = 0.005;
+
+const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) => {
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const [zoom, setZoom] = useState(1);
 	const gridSize = { x: 100, y: 100 };
 	const [offset, setOffset] = useState({ x: 0, y: 0 });
 	const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number } | null>(null);
 	const [isDragging, setIsDragging] = useState(false);
-	// const [lastMousePos, setLastMousePos] = useState<{ x: number; y: number } | null>(null);
+	const [isLocked, setIsLocked] = useState(true);
+	const [currentColor, setCurrentColor] = useState(userColors[0] || "#FFFFFF");
+	const { isConnected } = useAuth();
 
 	const [pixelData, setPixelData] = useState<CanvaPixel[]>(() => {
-		console.log(canvaPixels);
 		return canvaPixels.map(pixel => ({ ...pixel }));
 	});
 
 	const recenterGrid = () => {
-		setOffset({ x: 0, y: 0 });
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		const newZoom = MIN_ZOOM;
+		const pixelSize = 50 * newZoom;
+		const gridWidth = gridSize.x * pixelSize;
+		const gridHeight = gridSize.y * pixelSize;
+		const newOffsetX = (canvas.width - gridWidth) / 2;
+		const newOffsetY = (canvas.height - gridHeight) / 2;
+		setZoom(newZoom);
+		setOffset({ x: newOffsetX, y: newOffsetY });
 	};
-
-	useEffect(() => {
-		setPixelData(canvaPixels.map(pixel => ({ ...pixel })));
-	}, [canvaPixels]);
 
 	const updateCanvasSize = () => {
 		const canvas = canvasRef.current;
@@ -81,6 +95,20 @@ const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
 	};
 
 	useEffect(() => {
+		if (userColors.length > 0) {
+			setCurrentColor(userColors[0]);
+		}
+	}, [userColors]);
+
+	useEffect(() => {
+		recenterGrid();
+	}, []);
+
+	useEffect(() => {
+		setPixelData(canvaPixels.map(pixel => ({ ...pixel })));
+	}, [canvaPixels]);
+
+	useEffect(() => {
 		updateCanvasSize();
 		window.addEventListener('resize', updateCanvasSize);
 		return () => window.removeEventListener('resize', updateCanvasSize);
@@ -91,13 +119,13 @@ const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
 	}, [zoom, offset, hoveredPixel, pixelData]);
 
 	const handleMouseDown = () => {
+		if (!isLocked) return;
 		setIsDragging(true);
-		// setLastMousePos({ x: e.clientX, y: e.clientY });
 	};
 
 	const handleMouseUp = () => {
+		if (!isLocked) return;
 		setIsDragging(false);
-		// setLastMousePos(null);
 	};
 
 	const handleMouseMove = (e: React.MouseEvent) => {
@@ -105,7 +133,6 @@ const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
 			const deltaX = e.movementX;
 			const deltaY = e.movementY;
 			setOffset(prev => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
-			// setLastMousePos({ x: e.clientX, y: e.clientY });
 		} else {
 			const canvas = canvasRef.current;
 			if (!canvas) return;
@@ -123,7 +150,9 @@ const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
 		}
 	};
 
-	const handleClick = (e: React.MouseEvent) => {
+	const handleClick = async (e: React.MouseEvent) => {
+		if (isLocked || !isConnected()) return;
+
 		const canvas = canvasRef.current;
 		if (!canvas) return;
 		const rect = canvas.getBoundingClientRect();
@@ -133,28 +162,64 @@ const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
 		const x = Math.floor((mouseX - offset.x) / pixelSize);
 		const y = Math.floor((mouseY - offset.y) / pixelSize);
 		if (x >= 0 && x < gridSize.x && y >= 0 && y < gridSize.y) {
-			const pixelToReplace = pixelData.find(pixel => pixel.positionX === x && pixel.positionY === y);
-			if (pixelToReplace) {
+			const previousPixel = pixelData.find(
+				(pixel) => pixel.positionX === x && pixel.positionY === y
+			);
 
-			} else {
-
-			}
-			setPixelData(prevData => {
-				const index = prevData.findIndex(pixel => pixel.positionX === x && pixel.positionY === y);
+			setPixelData((prevData) => {
+				const index = prevData.findIndex(
+					(pixel) => pixel.positionX === x && pixel.positionY === y
+				);
 				if (index !== -1) {
 					const newData = [...prevData];
-					newData[index] = { ...newData[index], color: 'red' };
+					newData[index] = { ...newData[index], color: currentColor };
 					return newData;
 				} else {
-					return [...prevData, { positionX: x, positionY: y, color: 'red' }];
+					return [...prevData, { positionX: x, positionY: y, color: currentColor }];
 				}
-			})
+			});
+
+			setUserColors(prevColors => {
+				const index = prevColors.findIndex(c => c.toLowerCase() === currentColor.toLowerCase());
+				let newColors = [...prevColors];
+				if (index !== -1) {
+					newColors.splice(index, 1);
+				}
+				newColors.unshift(currentColor);
+				if (newColors.length > 10) {
+					newColors = newColors.slice(0, 10);
+				}
+				return newColors;
+			});
+
+			try {
+				await axiosService.post('/api/pixel', {
+					positionX: x,
+					positionY: y,
+					color: currentColor
+				});
+			} catch (error) {
+				setPixelData(prevData => {
+					const index = prevData.findIndex(
+						(pixel) => pixel.positionX === x && pixel.positionY === y
+					);
+					if (index !== -1) {
+						if (previousPixel) {
+							const newData = [...prevData];
+							newData[index] = previousPixel;
+							return newData;
+						} else {
+							return prevData.filter(
+								(pixel) => !(pixel.positionX === x && pixel.positionY === y)
+							);
+						}
+					}
+					return prevData;
+				});
+			}
 		}
 	};
 
-	const MAX_ZOOM = 5;
-	const MIN_ZOOM = 0.1;
-	const ZOOM_SENSITIVITY = 0.005;
 	const handleMouseWheel = (e: React.WheelEvent) => {
 		const canvas = canvasRef.current;
 		if (!canvas) return;
@@ -178,7 +243,8 @@ const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
 				position: 'relative',
 				width: '100%',
 				height: '100vh',
-				overflow: 'hidden'
+				overflow: 'hidden',
+				cursor: (isLocked || !isConnected()) ? "move" : "auto",
 			}}
 			onMouseDown={handleMouseDown}
 			onMouseUp={handleMouseUp}
@@ -187,8 +253,15 @@ const Grid: React.FC<GridProps> = ({ canvaPixels }) => {
 			onWheel={handleMouseWheel}
 		>
 			<canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
-			<RecenterButton recenterCallback={recenterGrid} />
-			<GridBar coordinates={hoveredPixel} />
+			<GridBar
+				coordinates={hoveredPixel}
+				isLocked={isLocked}
+				setIsLocked={setIsLocked}
+				recenterCallback={recenterGrid}
+				currentColor={currentColor}
+				recentColors={userColors}
+				onColorChange={setCurrentColor}
+				shouldDisplayPixelControls={isConnected()} />
 		</div>
 	);
 };

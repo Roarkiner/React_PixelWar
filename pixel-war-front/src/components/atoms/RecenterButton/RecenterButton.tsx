@@ -9,15 +9,10 @@ const RecenterButton: React.FC<RecenterButtonProps> = ({ recenterCallback }) => 
 	return (
 		<Button
 			variant="contained"
-			color="primary"
+			color="secondary"
 			onClick={recenterCallback}
-			style={{
-				position: 'fixed',
-				bottom: '20px',
-				left: '20px',
-			}}
 		>
-			Retrouver la grille
+			Recentrer la grille
 		</Button>
 	);
 };
