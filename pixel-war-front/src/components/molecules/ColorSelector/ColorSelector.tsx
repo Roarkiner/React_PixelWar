@@ -58,6 +58,10 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ currentColor, recentColor
 					backgroundColor: currentColor,
 					borderRadius: '50%',
 					border: '2px solid #000',
+					'&:hover': {
+						backgroundColor: currentColor,
+						boxShadow: 'inset 0 0 5px rgba(0, 0, 0, 0.5)',
+					}
 				}}
 			/>
 			<Popover
@@ -90,7 +94,7 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ currentColor, recentColor
 				onBlur={handleInputBlur}
 				variant="outlined"
 				size="small"
-				sx={{ marginLeft: 2, width: '120px' }}
+				sx={{ marginLeft: 2, width: '120px', backgroundColor: 'white' }}
 			/>
 			{recentColors.length > 0 && (
 				<Box
@@ -114,6 +118,10 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ currentColor, recentColor
 								border: '2px solid #000',
 								marginRight: index < recentColors.length - 1 ? '2px' : 0,
 								cursor: 'pointer',
+								'&:hover': {
+									backgroundColor: color,
+									boxShadow: 'inset 0 0 5px rgba(0, 0, 0, 0.5)',
+								}
 							}}
 						/>
 					))}
