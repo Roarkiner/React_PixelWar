@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { CanvaPixel } from '../../../typings/Pixel';
-import { GridBar } from '../../molecules';
+import { CanvaPixel, PixelInfo } from '../../../typings/Pixel';
+import { GridBar, PixelTooltip } from '../../molecules';
 import axiosService from '../../../services/AxiosService';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -15,12 +15,14 @@ const MIN_ZOOM = 0.1;
 const ZOOM_SENSITIVITY = 0.005;
 
 const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) => {
+	const [tooltipInfos, setTooltipInfos] = useState<PixelInfo | null>(null);
 	const canvasRef = useRef<HTMLCanvasElement | null>(null);
 	const [zoom, setZoom] = useState(1);
 	const gridSize = { x: 100, y: 100 };
 	const [offset, setOffset] = useState({ x: 0, y: 0 });
 	const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number } | null>(null);
 	const [isDragging, setIsDragging] = useState(false);
+	const [dragged, setDragged] = useState(false);
 	const [isLocked, setIsLocked] = useState(true);
 	const [currentColor, setCurrentColor] = useState(userColors[0] || "#FFFFFF");
 	const { isConnected } = useAuth();
@@ -120,6 +122,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 
 	const handleMouseDown = () => {
 		if (!isLocked) return;
+		setDragged(false);
 		setIsDragging(true);
 	};
 
@@ -130,6 +133,9 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 
 	const handleMouseMove = (e: React.MouseEvent) => {
 		if (isDragging) {
+			if (Math.abs(e.movementX) > 5 || Math.abs(e.movementY) > 5) {
+				setDragged(true);
+			}
 			const deltaX = e.movementX;
 			const deltaY = e.movementY;
 			setOffset(prev => ({ x: prev.x + deltaX, y: prev.y + deltaY }));
@@ -151,72 +157,93 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 	};
 
 	const handleClick = async (e: React.MouseEvent) => {
-		if (isLocked || !isConnected()) return;
-
 		const canvas = canvasRef.current;
 		if (!canvas) return;
+		if (dragged) {
+			return;
+		}
 		const rect = canvas.getBoundingClientRect();
 		const mouseX = e.clientX - rect.left;
 		const mouseY = e.clientY - rect.top;
 		const pixelSize = 50 * zoom;
 		const x = Math.floor((mouseX - offset.x) / pixelSize);
 		const y = Math.floor((mouseY - offset.y) / pixelSize);
-		if (x >= 0 && x < gridSize.x && y >= 0 && y < gridSize.y) {
-			const previousPixel = pixelData.find(
+		if (x < 0 || x >= gridSize.x || y < 0 || y >= gridSize.y) return;
+
+		if (isLocked || !isConnected()) {
+			try {
+				const response = await axiosService.get(`/api/pixel?positionX=${x}&positionY=${y}`);
+				const pixelInfo = response.data;
+				if (pixelInfo) {
+					setTooltipInfos(pixelInfo);
+				} else {
+					setTooltipInfos({
+						positionX: x,
+						positionY: y,
+						color: "Non colorié",
+						last_painted_at: "Non colorié",
+						owner: "Non colorié"
+					});
+				}
+			} catch (error) {
+				console.error(`Erreur lors de la récupération des informations du pixel (${x}, ${y}): `, error);
+			}
+			return;
+		}
+		const previousPixel = pixelData.find(
+			(pixel) => pixel.positionX === x && pixel.positionY === y
+		);
+
+		setPixelData((prevData) => {
+			const index = prevData.findIndex(
 				(pixel) => pixel.positionX === x && pixel.positionY === y
 			);
+			if (index !== -1) {
+				const newData = [...prevData];
+				newData[index] = { ...newData[index], color: currentColor };
+				return newData;
+			} else {
+				return [...prevData, { positionX: x, positionY: y, color: currentColor }];
+			}
+		});
 
-			setPixelData((prevData) => {
+		setUserColors(prevColors => {
+			const index = prevColors.findIndex(c => c.toLowerCase() === currentColor.toLowerCase());
+			let newColors = [...prevColors];
+			if (index !== -1) {
+				newColors.splice(index, 1);
+			}
+			newColors.unshift(currentColor);
+			if (newColors.length > 10) {
+				newColors = newColors.slice(0, 10);
+			}
+			return newColors;
+		});
+
+		try {
+			await axiosService.post('/api/pixel', {
+				positionX: x,
+				positionY: y,
+				color: currentColor
+			});
+		} catch (error) {
+			setPixelData(prevData => {
 				const index = prevData.findIndex(
 					(pixel) => pixel.positionX === x && pixel.positionY === y
 				);
 				if (index !== -1) {
-					const newData = [...prevData];
-					newData[index] = { ...newData[index], color: currentColor };
-					return newData;
-				} else {
-					return [...prevData, { positionX: x, positionY: y, color: currentColor }];
-				}
-			});
-
-			setUserColors(prevColors => {
-				const index = prevColors.findIndex(c => c.toLowerCase() === currentColor.toLowerCase());
-				let newColors = [...prevColors];
-				if (index !== -1) {
-					newColors.splice(index, 1);
-				}
-				newColors.unshift(currentColor);
-				if (newColors.length > 10) {
-					newColors = newColors.slice(0, 10);
-				}
-				return newColors;
-			});
-
-			try {
-				await axiosService.post('/api/pixel', {
-					positionX: x,
-					positionY: y,
-					color: currentColor
-				});
-			} catch (error) {
-				setPixelData(prevData => {
-					const index = prevData.findIndex(
-						(pixel) => pixel.positionX === x && pixel.positionY === y
-					);
-					if (index !== -1) {
-						if (previousPixel) {
-							const newData = [...prevData];
-							newData[index] = previousPixel;
-							return newData;
-						} else {
-							return prevData.filter(
-								(pixel) => !(pixel.positionX === x && pixel.positionY === y)
-							);
-						}
+					if (previousPixel) {
+						const newData = [...prevData];
+						newData[index] = previousPixel;
+						return newData;
+					} else {
+						return prevData.filter(
+							(pixel) => !(pixel.positionX === x && pixel.positionY === y)
+						);
 					}
-					return prevData;
-				});
-			}
+				}
+				return prevData;
+			});
 		}
 	};
 
@@ -262,6 +289,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 				recentColors={userColors}
 				onColorChange={setCurrentColor}
 				shouldDisplayPixelControls={isConnected()} />
+			{tooltipInfos && <PixelTooltip info={tooltipInfos} onClose={() => setTooltipInfos(null)} />}
 		</div>
 	);
 };

@@ -29,7 +29,7 @@ const getPixel = async (positionX, positionY) => {
 	`, [positionX, positionY]);
 
 	if (!pixel[0] || !pixel[0].color) {
-		throw new Error("Pixel introuvable.");
+		return null;
 	}
 
 	return {
