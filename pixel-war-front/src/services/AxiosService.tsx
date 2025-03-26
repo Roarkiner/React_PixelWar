@@ -26,7 +26,9 @@ axiosService.interceptors.request.use(
 axiosService.interceptors.response.use(
 	(response) => response,
 	(error) => {
-		if (error.response?.status === 401 && !window.location.pathname.startsWith("/auth")) {
+		console.log(error)
+		if (error.response?.status === 401 || (error.response?.status === 403 && error.response?.data?.message === 
+			"Invalid or expired token") && !window.location.pathname.startsWith("/auth")) {
 			console.error('Unauthorized, redirecting to login...');
 			const auth = getAuthRef().current;
 			if(auth)
