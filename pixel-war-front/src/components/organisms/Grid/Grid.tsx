@@ -29,6 +29,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 	const { isConnected } = useAuth();
 	const [pixelData, setPixelData] = useState<CanvaPixel[]>(() => canvaPixels.map(pixel => ({ ...pixel })));
 	const socket = useRef<Socket | null>(null);
+	const [triggerRedraw, setTriggerRedraw] = useState(false);
 
 	useEffect(() => {
 		socket.current = io("http://localhost:3000");
@@ -72,7 +73,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 
 	useEffect(() => {
 		drawGrid();
-	}, [zoom, offset, hoveredPixel, pixelData]);
+	}, [zoom, offset, hoveredPixel, pixelData, triggerRedraw]);
 
 	const recenterGrid = () => {
 		const canvas = canvasRef.current;
@@ -82,7 +83,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 		const gridWidth = gridSize.x * pixelSize;
 		const gridHeight = gridSize.y * pixelSize;
 		const newOffsetX = (canvas.width - gridWidth) / 2;
-		const newOffsetY = (canvas.height - gridHeight) / 2;
+		const newOffsetY = (canvas.height - gridHeight) / 2.5;
 		setZoom(newZoom);
 		setOffset({ x: newOffsetX, y: newOffsetY });
 	};
@@ -92,6 +93,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 		if (!canvas) return;
 		canvas.width = window.innerWidth;
 		canvas.height = window.innerHeight;
+		setTriggerRedraw(prev => !prev);
 	};
 
 	const drawGrid = () => {
