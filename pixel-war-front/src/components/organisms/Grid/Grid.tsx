@@ -123,13 +123,11 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 	};
 
 	const handleMouseDown = () => {
-		if (!isLocked) return;
 		setDragged(false);
 		setIsDragging(true);
 	};
 
 	const handleMouseUp = () => {
-		if (!isLocked) return;
 		setIsDragging(false);
 	};
 
