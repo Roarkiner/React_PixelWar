@@ -34,7 +34,6 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 	useEffect(() => {
 		socket.current = io("http://localhost:3000");
 		socket.current.on("newPixel", (newPixel: any) => {
-			console.log(newPixel)
 			setPixelData(prevData => {
 				const index = prevData.findIndex(pixel => pixel.positionX === newPixel.positionX && pixel.positionY === newPixel.positionY);
 				if (index !== -1) {

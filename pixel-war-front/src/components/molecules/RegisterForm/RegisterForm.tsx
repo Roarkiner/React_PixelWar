@@ -57,7 +57,6 @@ const RegisterForm: FC = () => {
 
 		try {
 			const response = await axiosService.post("/auth/signup", data);
-			console.log(response)
 			const responseData = response?.data;
 			if (!responseData?.user || !responseData?.token) throw new Error();
 
