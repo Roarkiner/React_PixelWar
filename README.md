@@ -47,4 +47,5 @@ Placez des pixels et vérifiez la synchronisation
 De base, deux utilisateurs sont présents à la création de la BDD : 
 - login : "user1@example.com" ou "user2@example.com"
 - mdp : "password"
+
 Vous pouvez vous connecter à leur compte ou créer un nouveau compte pour commencer à placer des pixels
