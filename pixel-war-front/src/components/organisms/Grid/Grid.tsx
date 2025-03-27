@@ -107,7 +107,7 @@ const Grid: React.FC<GridProps> = ({ canvaPixels, userColors, setUserColors }) =
 				let color = "#FFF";
 				const pixel = pixelData.find(pixel => pixel.positionX === x && pixel.positionY === y);
 				if (pixel) color = pixel.color;
-				ctx.fillStyle = color;
+				ctx.fillStyle = (!isLocked && hoveredPixel && hoveredPixel.x === x && hoveredPixel.y === y) ? currentColor : color;
 				ctx.fillRect(x * pixelSize + offset.x, y * pixelSize + offset.y, pixelSize, pixelSize);
 				if (hoveredPixel && hoveredPixel.x === x && hoveredPixel.y === y) {
 					ctx.strokeStyle = 'black';
